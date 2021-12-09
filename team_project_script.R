@@ -1,0 +1,395 @@
+library(readr)
+library(readxl)
+library(tidyverse)
+library(caret)
+library(tidymodels)
+library(zoo)
+library(randomForest)
+library(kknn)
+library(rpart)
+library(rpart.plot)
+
+# REGRESSION MODELS #
+
+#google sheets download
+df <- read_excel("/Users/ankushi/Desktop/disp2.xlsx")
+
+#only Africa data 
+df2 <- df %>% slice(1:1417)
+
+# only relatively complete data 
+df2 <- select(df, year, country_origin, refugees, asylum_seekers, IDPs, 
+              ext_conflict, int_conflict, battle_deaths, 
+              elect_violence, cpi_inflation, life_exp, fe_etfra, 
+              fdipercent, gdp, gdppc, gdppcgrowth, oilpercent, 
+              urban, totalpop, totaff_natevents)
+
+
+df2 <- as.numeric(df2)
+df2 <- mutate_at(df2, "totaff_natevents", ~replace(., is.na(.), 0))
+df2 <- na.locf(df2)
+
+set.seed(20201020)
+
+# create split object
+disp_split <- initial_split(data = df2, prop = 0.90)
+
+# create training and testing data
+disp_train <- training(x = disp_split)
+disp_test <- testing(x = disp_split)
+
+# create recipe
+disp_recipe <- recipe(refugees ~ ., data = disp_train) %>%
+  update_role(year, country_origin, new_role = "ID") #keep the ID variables for future reference
+
+# create resamples 
+disp_cv <- vfold_cv(data = disp_train, v = 5)
+
+# knn with resampling and hyperparameter tuning 
+
+## model specification 
+knn <- nearest_neighbor(neighbors = tune()) %>%
+  set_engine(engine = "kknn") %>%
+  set_mode(mode = "regression") 
+knn
+
+## create workflow 
+knn_workflow <-
+  workflow() %>%
+  add_model(knn) %>%
+  add_recipe(disp_recipe)
+
+## create tuning grid 
+knn_grid <- tibble(neighbors = seq(from = 1, to = 30, by = 2))
+knn_grid
+
+## resampling models for tuning grid 
+knn_grid_rs <-
+  knn_workflow %>%
+  tune_grid(resamples = disp_cv,
+            grid = knn_grid,
+            control = control_grid(save_pred = TRUE))
+
+## evaluate the resampling models and select best 
+knn_grid_rs %>% collect_metrics()          
+knn_grid_rs %>% show_best(metric = "rmse")
+best_knn <- knn_grid_rs %>% select_best(metric = "rmse")
+knn_grid_rs %>% collect_predictions()
+
+## best model
+best_knn_workflow <- knn_workflow %>%
+  finalize_workflow(best_knn)
+
+set.seed(7)
+knn_best_rs <- 
+  best_knn_workflow %>%
+  fit_resamples(resamples = disp_cv) 
+
+collect_metrics(knn_best_rs)
+
+# train the model on the training set 
+knn_fit_test <-
+  knn_workflow %>%
+  fit(data = disp_train)
+
+# predictions using testing set 
+disp_pred <- predict(knn_fit_test, disp_test)
+
+# df with predictions
+model_pred <- bind_cols(disp_test$refugees, disp_pred)
+model_pred <- rename(model_pred, refugees = ...1, prediction = .pred)
+
+# calculate RMSE
+rmse(model_pred, truth = refugees, estimate = prediction)
+rsq(model_pred, truth = refugees, estimate = prediction)
+
+##################################################################################################
+
+# random forest
+
+## model 
+tune_spec <- rand_forest(
+  mtry = tune(),
+  trees = 1000,
+  min_n = tune()
+) %>%
+  set_mode("regression") %>%
+  set_engine("ranger")
+
+tune_wf <- workflow() %>%
+  add_recipe(disp_recipe) %>%
+  add_model(tune_spec)
+
+set.seed(7)
+tune_res <- tune_grid(
+  tune_wf,
+  resamples = disp_cv,
+  grid = 10
+)
+tune_res
+
+tune_res %>% collect_metrics() 
+tune_res %>% show_best(metric = "rmse")
+best_rf <- tune_res %>% select_best(metric = "rmse")
+
+## best model
+
+final_rf <- finalize_model(
+  tune_spec,
+  best_rf
+)
+final_rf
+
+final_wf <- workflow() %>%
+  add_recipe(disp_recipe) %>%
+  add_model(final_rf)
+
+final_res <- final_wf %>%
+  last_fit(disp_split)
+
+final_res %>%
+  collect_metrics()
+
+# df with predictions
+model2_pred <- final_res %>% collect_predictions() 
+
+model2_pred <- select(model2_pred, refugees, .pred)
+
+model2_pred <- rename(model2_pred, prediction = .pred)
+
+# metrics
+rmse(model2_pred, truth = refugees, estimate = prediction)
+rsq(model2_pred, truth = refugees, estimate = prediction)
+
+##################################################################################################
+
+# CART
+
+## model specification 
+decision_tree <- decision_tree() %>%
+  set_engine(engine = "rpart") %>%
+  set_mode(mode = "regression")
+
+## workflow 
+tree_workflow <-
+  workflow() %>%
+  add_model(decision_tree) %>%
+  add_recipe(disp_recipe)
+
+# resampling models for random forest model
+set.seed(7)
+tree_fit_rs <-
+  tree_workflow %>%
+  fit_resamples(resamples = disp_cv) 
+
+collect_metrics(tree_fit_rs)
+
+# train the best model on the training set 
+tree_fit_test <-
+  tree_workflow %>%
+  fit(data = disp_train)
+
+# predictions using testing set 
+model3_pred <- predict(tree_fit_test, disp_test)
+
+# df with predictions
+model3_pred <- bind_cols(disp_test$refugees, model3_pred)
+model3_pred <- rename(model3_pred, refugees = ...1, prediction = .pred)
+
+# metrics
+rmse(model3_pred, truth = refugees, estimate = prediction)
+rsq(model3_pred, truth = refugees, estimate = prediction)
+
+##################################################################################################
+
+# CLASSIFICATION MODELS #
+
+df <- read_excel("/Users/ankushi/Desktop/disp2.xlsx")
+
+df2 <- df %>% slice(1:1417)
+
+
+df2 <- select(df, displacement_event, year, country_origin, 
+              asylum_seekers, IDPs, 
+              ext_conflict, int_conflict, battle_deaths, 
+              elect_violence, cpi_inflation, life_exp, fe_etfra, 
+              fdipercent, gdp, gdppc, gdppcgrowth, oilpercent, 
+              urban, totalpop, totaff_natevents)
+
+df2$displacement_event <- as.factor(df2$displacement_event)
+df2 <- as.numeric(df2)
+df2 <- mutate_at(df2, "totaff_natevents", ~replace(., is.na(.), 0))
+df2 <- na.locf(df2)
+
+set.seed(20211117)
+
+# create split object
+disp_split <- initial_split(data = df2, prop = 0.90)
+
+# create training and testing data
+disp_train <- training(x = disp_split)
+disp_test <- testing(x = disp_split)
+
+set.seed(20201020)
+
+# create recipe
+disp_recipe <- recipe(displacement_event ~ ., data = disp_train) %>%
+  themis::step_downsample(displacement_event) %>% #since the EDA shows class imbalance in the data toward "micro" and "small" displacement events
+  update_role(year, country_origin, new_role = "ID") %>% #keep the ID variables for future reference
+  step_normalize(all_numeric_predictors()) #scale and center the predictors 
+
+# create resamples 
+disp_cv <- vfold_cv(data = disp_train, v = 5)
+
+# knn with resampling and hyperparameter tuning 
+
+## model specification 
+knn <- nearest_neighbor(neighbors = tune()) %>%
+  set_engine(engine = "kknn") %>%
+  set_mode(mode = "classification") 
+knn
+
+## create workflow 
+knn_workflow <-
+  workflow() %>%
+  add_model(knn) %>%
+  add_recipe(disp_recipe)
+
+## create tuning grid 
+knn_grid <- tibble(neighbors = seq(from = 1, to = 30, by = 2))
+knn_grid
+
+## resampling models for tuning grid 
+knn_grid_rs <-
+  knn_workflow %>%
+  tune_grid(resamples = disp_cv,
+            grid = knn_grid,
+            control = control_grid(save_pred = TRUE))
+
+## evaluate the resampling models and select best 
+knn_grid_rs %>% collect_metrics()          
+knn_grid_rs %>% show_best(metric = "accuracy")
+best_knn <- knn_grid_rs %>% select_best(metric = "accuracy")
+knn_grid_rs %>% collect_predictions()
+
+## best model
+best_knn_workflow <- knn_workflow %>%
+  finalize_workflow(best_knn)
+
+## train the best model on the training set 
+best_knn_fit <- 
+  best_knn_workflow %>%
+  fit(data=disp_train)
+best_knn_fit
+
+# predictions using testing set 
+disp_pred <- predict(best_knn_fit, disp_test)
+
+# df with predictions
+model4_pred <- bind_cols(disp_test$displacement_event, disp_pred)
+model4_pred <- rename(model4_pred, event = ...1, 
+                      prediction = .pred_class)
+
+# accuracy 
+accuracy(model4_pred, truth = event, estimate = prediction)
+
+##################################################################################################
+
+# random forest with hyperparameter tuning
+
+## model 
+tune_spec <- rand_forest(
+  mtry = tune(),
+  trees = 1000,
+  min_n = tune()
+) %>% 
+  set_mode("classification") %>%
+  set_engine("ranger")
+
+tune_wf <- workflow() %>%
+  add_recipe(disp_recipe) %>%
+  add_model(tune_spec)
+
+set.seed(7)
+tune_res <- tune_grid(
+  tune_wf,
+  resamples = disp_cv,
+  grid = 10
+)
+tune_res
+
+tune_res %>% collect_metrics() 
+tune_res %>% show_best(metric = "accuracy")
+best_rf <- tune_res %>% select_best(metric = "accuracy")
+
+## best model
+
+final_rf <- finalize_model(
+  tune_spec,
+  best_rf
+)
+final_rf
+
+final_wf <- workflow() %>%
+  add_recipe(disp_recipe) %>%
+  add_model(final_rf)
+
+final_res <- final_wf %>%
+  last_fit(disp_split)
+
+final_res %>%
+  collect_metrics()
+
+# df with predictions
+model5_pred <- final_res %>% collect_predictions() 
+
+model5_pred <- select(model5_pred, displacement_event, .pred_class)
+
+model5_pred <- rename(model5_pred, prediction = .pred_class)
+
+# metrics
+accuracy(model5_pred, truth = displacement_event, 
+         estimate = prediction)
+
+##################################################################################################
+
+# CART
+
+## model specification 
+decision_tree <- decision_tree() %>%
+  set_engine(engine = "rpart") %>%
+  set_mode(mode = "classification")
+
+## workflow 
+tree_workflow <-
+  workflow() %>%
+  add_model(decision_tree) %>%
+  add_recipe(disp_recipe)
+
+# resampling models for random forest model
+set.seed(7)
+tree_fit_rs <-
+  tree_workflow %>%
+  fit_resamples(resamples = disp_cv) 
+
+collect_metrics(tree_fit_rs)
+
+# train the best model on the training set 
+tree_fit_test <-
+  tree_workflow %>%
+  fit(data = disp_train)
+
+# predictions using testing set 
+model6_pred <- predict(tree_fit_test, disp_test)
+
+# df with predictions
+model6_pred <- bind_cols(disp_test$displacement_event, model6_pred)
+model6_pred <- rename(model6_pred, event = ...1, prediction = .pred_class)
+
+# metrics
+accuracy(model6_pred, truth = event, estimate = prediction)
+
+
+
+
+
