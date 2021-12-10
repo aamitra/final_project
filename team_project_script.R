@@ -9,25 +9,83 @@ library(kknn)
 library(rpart)
 library(rpart.plot)
 
-# REGRESSION MODELS #
+# ensuring no scientific notation is used----
+options(scipen=999)
 
-#google sheets download
-df <- read_excel("/Users/ankushi/Desktop/disp2.xlsx")
+# ensuring no scientific notation is used----
+options(scipen=999)
 
-#only Africa data 
-df2 <- df %>% slice(1:1417)
+# reading in natural event data, source: EM-DAT, Int. Disaster Database----
+natevent_df <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQt_WzQUzggYSN6404YIJvTngtXPY-jwxNwXzqWnRHPwL1urdoTIsek5B9hjPEu6BFUz9LS3negITtG/pub?output=csv")
 
-# only relatively complete data 
-df2 <- select(df, year, country_origin, refugees, asylum_seekers, IDPs, 
-              ext_conflict, int_conflict, battle_deaths, 
-              elect_violence, cpi_inflation, life_exp, fe_etfra, 
-              fdipercent, gdp, gdppc, gdppcgrowth, oilpercent, 
-              urban, totalpop, totaff_natevents)
+# loading refugee data from UNHCR----
+devtools::install_github("unhcr/unhcrdatapackage") # run if 'unhcrdatapackage' package not already installed to computer
+refugee_df <- unhcrdatapackage::end_year_population_totals %>% 
+  filter(Year>=1990 & Year<=2020,
+         CountryOriginCode %in% natevent_df$iso_code) %>% 
+  group_by(CountryOriginCode,Year) %>% 
+  summarize(refugees=sum(REF),
+            assylum_seekers=sum(ASY),
+            IDPs=sum(IDP)) %>% 
+  rename("iso_code"="CountryOriginCode","year"="Year") %>% 
+  as_tibble()
 
 
-df2 <- as.numeric(df2)
-df2 <- mutate_at(df2, "totaff_natevents", ~replace(., is.na(.), 0))
-df2 <- na.locf(df2)
+# merging refugee df with natevent df... "df" will be the primary name for the data frame
+df <- left_join(refugee_df, natevent_df,by=c("iso_code"="iso_code","year"="year"))
+
+# getting government variables from v-dem----
+devtools::install_github("vdeminstitute/vdemdata") # run if 'vdemdata' package is not already installed to computer
+# loading subsaharan africa data from vdem from 1990 to 2020
+vdem_subs_africa_df <- vdemdata::vdem %>% 
+  filter(year>=1990 & year<=2020,
+         e_regionpol_6C==4) %>% # 4 is VDEM regional code for subsaharan africa 
+  select(-ends_with(c("ord","osp","codehigh","codelow","_sd","mean","_nr"))) %>% 
+  select_if(~ !any(is.na(.)))
+
+# selecting target government variables from v-dem 
+vdem_subs_africa_df <- vdem_subs_africa_df %>% 
+  select(country_text_id,
+         year,
+         v2ellocgov, # local govt. exists, 0=no, 1=yes
+         v2elreggov, # regional govt. exists, 0=no, 1=yes
+         v2x_liberal, # liberal principle of democracy achieved, 0=not achieved, 1=achieved
+         v2xeg_eqdr, # equal distribution of resources in society index, 0=not equal, 1=equal
+         v2clrgunev, # equal respect per subnational regions by govt, low=not equal, 1=equal
+         v2clrspct, # impartial pub administration, low=law not respected by pub officials, high=respected
+         v2exbribe, # executive bribery and corrupt exchanges, low=routine/expected, high=never/hardly happens
+         v2dlengage, # engaged society, low=no public deliberation, high=common public deliberation
+         v2xcl_dmove, # freedom of domestic movement, 0=no freedom,1=freedom
+         v2xcl_slave # freedom from forced labor, 0=no freedom, 1=freedom
+  ) %>%
+  rename(locgovt_dummy=v2ellocgov,
+         reggovt_dummy=v2elreggov,
+         liberal_dem=v2x_liberal,
+         equal_dist=v2xeg_eqdr,
+         equal_area_respect=v2clrgunev,
+         govt_respect=v2clrspct,
+         exec_bribery=v2exbribe,
+         engaged_society=v2dlengage,
+         free_movement=v2xcl_dmove,
+         freedom_from_slavery=v2xcl_slave)
+
+# merging df with vdem df
+df <- left_join(df,vdem_subs_africa_df, by=c("iso_code"="country_text_id","year"="year"))
+
+# reading data from team google spreadsheet----
+conflict_economy_df <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vTrNaSHs6itvG-rvlhWjXZylNEi_eOZnFNT0_ugde2ySaebr-OPhPDsSWCOsyhI0Y6iCRruAxhJqKxk/pub?output=csv") %>% 
+  select(year,iso_code, 
+         ext_conflict, int_conflict, battle_deaths, 
+         elect_violence, cpi_inflation, life_exp, fe_etfra, 
+         fdipercent, gdp, gdppc, gdppcgrowth, oilpercent, 
+         urban, totalpop)
+# merging df with vdem df
+df <- left_join(df,conflict_economy_df, by=c("iso_code"="iso_code","year"="year"))
+
+
+
+#_____________________________________________________________________________________________________________________________________________________________________________________________
+# machine learning starts here----
 
 set.seed(20201020)
 
