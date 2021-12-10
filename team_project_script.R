@@ -12,9 +12,6 @@ library(rpart.plot)
 # ensuring no scientific notation is used----
 options(scipen=999)
 
-# ensuring no scientific notation is used----
-options(scipen=999)
-
 # reading in natural event data, source: EM-DAT, Int. Disaster Database----
 natevent_df <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQt_WzQUzggYSN6404YIJvTngtXPY-jwxNwXzqWnRHPwL1urdoTIsek5B9hjPEu6BFUz9LS3negITtG/pub?output=csv")
 
@@ -32,19 +29,19 @@ refugee_df <- unhcrdatapackage::end_year_population_totals %>%
 
 
 # merging refugee df with natevent df... "df" will be the primary name for the data frame
-df <- left_join(refugee_df, natevent_df,by=c("iso_code"="iso_code","year"="year"))
+df <- left_join(refugee_df, natevent_df,by=c("iso_code"="iso_code","year"="year")) %>% 
+  filter(!is.na(country_origin))
 
 # getting government variables from v-dem----
 devtools::install_github("vdeminstitute/vdemdata") # run if 'vdemdata' package is not already installed to computer
-# loading subsaharan africa data from vdem from 1990 to 2020
-vdem_subs_africa_df <- vdemdata::vdem %>% 
-  filter(year>=1990 & year<=2020,
-         e_regionpol_6C==4) %>% # 4 is VDEM regional code for subsaharan africa 
+# loading vdem data from 1990 to 2020
+vdem_df <- vdemdata::vdem %>% 
+  filter(year>=1990 & year<=2020) %>%  
   select(-ends_with(c("ord","osp","codehigh","codelow","_sd","mean","_nr"))) %>% 
-  select_if(~ !any(is.na(.)))
-
+  arrange(country_name)
+unique(vdem_df$country_name)
 # selecting target government variables from v-dem 
-vdem_subs_africa_df <- vdem_subs_africa_df %>% 
+vdem_df <- vdem_df %>% 
   select(country_text_id,
          year,
          v2ellocgov, # local govt. exists, 0=no, 1=yes
@@ -70,7 +67,7 @@ vdem_subs_africa_df <- vdem_subs_africa_df %>%
          freedom_from_slavery=v2xcl_slave)
 
 # merging df with vdem df
-df <- left_join(df,vdem_subs_africa_df, by=c("iso_code"="country_text_id","year"="year"))
+df <- left_join(df,vdem_df, by=c("iso_code"="country_text_id","year"="year"))
 
 # reading data from team google spreadsheet----
 conflict_economy_df <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vTrNaSHs6itvG-rvlhWjXZylNEi_eOZnFNT0_ugde2ySaebr-OPhPDsSWCOsyhI0Y6iCRruAxhJqKxk/pub?output=csv") %>% 
@@ -79,10 +76,12 @@ conflict_economy_df <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-
          elect_violence, cpi_inflation, life_exp, fe_etfra, 
          fdipercent, gdp, gdppc, gdppcgrowth, oilpercent, 
          urban, totalpop)
+
 # merging df with vdem df
 df <- left_join(df,conflict_economy_df, by=c("iso_code"="iso_code","year"="year"))
 
-
+# removing other data frames from environment----
+rm(conflict_economy_df,natevent_df,refugee_df,vdem_df)
 
 #_____________________________________________________________________________________________________________________________________________________________________________________________
 # machine learning starts here----
