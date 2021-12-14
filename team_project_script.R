@@ -8,25 +8,143 @@ library(randomForest)
 library(kknn)
 library(rpart)
 library(rpart.plot)
-
-# REGRESSION MODELS #
-
-#google sheets download
-df <- read_excel("/Users/ankushi/Desktop/disp2.xlsx")
-
-#only Africa data 
-df2 <- df %>% slice(1:1417)
-
-# only relatively complete data 
-df2 <- select(df, year, country_origin, refugees, asylum_seekers, IDPs, 
-              ext_conflict, int_conflict, battle_deaths, 
-              elect_violence, cpi_inflation, life_exp, fe_etfra, 
-              fdipercent, gdp, gdppc, gdppcgrowth, oilpercent, 
-              urban, totalpop, totaff_natevents)
+library(sf)
+library(vip)
 
 
-df2 <- as.numeric(df2)
-df2 <- mutate_at(df2, "totaff_natevents", ~replace(., is.na(.), 0))
+# ensuring no scientific notation is used----
+options(scipen=999)
+
+# reading in natural event data, source: EM-DAT, Int. Disaster Database----
+natevent_df <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQt_WzQUzggYSN6404YIJvTngtXPY-jwxNwXzqWnRHPwL1urdoTIsek5B9hjPEu6BFUz9LS3negITtG/pub?output=csv")
+
+# loading refugee data from UNHCR----
+devtools::install_github("unhcr/unhcrdatapackage") # run if 'unhcrdatapackage' package not already installed to computer
+refugee_df <- unhcrdatapackage::end_year_population_totals %>% 
+  filter(Year>=1990 & Year<=2020,
+         CountryOriginCode %in% natevent_df$iso_code) %>% 
+  group_by(CountryOriginCode,Year) %>% 
+  summarize(refugees=sum(REF),
+            assylum_seekers=sum(ASY),
+            IDPs=sum(IDP)) %>% 
+  rename("iso_code"="CountryOriginCode","year"="Year") %>% 
+  as_tibble()
+
+
+# merging refugee df with natevent df... "df" will be the primary name for the data frame
+df <- left_join(refugee_df, natevent_df,by=c("iso_code"="iso_code","year"="year")) %>% 
+  filter(!is.na(country_origin))
+
+# getting government variables from v-dem----
+devtools::install_github("vdeminstitute/vdemdata") # run if 'vdemdata' package is not already installed to computer
+# loading vdem data from 1990 to 2020
+vdem_df <- vdemdata::vdem %>% 
+  filter(year>=1990 & year<=2020) %>%  
+  select(-ends_with(c("ord","osp","codehigh","codelow","_sd","mean","_nr"))) %>% 
+  arrange(country_name)
+unique(vdem_df$country_name)
+# selecting target government variables from v-dem 
+vdem_df <- vdem_df %>% 
+  select(country_text_id,
+         year,
+         v2ellocgov, # local govt. exists, 0=no, 1=yes
+         v2elreggov, # regional govt. exists, 0=no, 1=yes
+         v2x_liberal, # liberal principle of democracy achieved, 0=not achieved, 1=achieved
+         v2xeg_eqdr, # equal distribution of resources in society index, 0=not equal, 1=equal
+         v2clrgunev, # equal respect per subnational regions by govt, low=not equal, 1=equal
+         v2clrspct, # impartial pub administration, low=law not respected by pub officials, high=respected
+         v2exbribe, # executive bribery and corrupt exchanges, low=routine/expected, high=never/hardly happens
+         v2dlengage, # engaged society, low=no public deliberation, high=common public deliberation
+         v2xcl_dmove, # freedom of domestic movement, 0=no freedom,1=freedom
+         v2xcl_slave # freedom from forced labor, 0=no freedom, 1=freedom
+  ) %>%
+  rename(locgovt_dummy=v2ellocgov,
+         reggovt_dummy=v2elreggov,
+         liberal_dem=v2x_liberal,
+         equal_dist=v2xeg_eqdr,
+         equal_area_respect=v2clrgunev,
+         govt_respect=v2clrspct,
+         exec_bribery=v2exbribe,
+         engaged_society=v2dlengage,
+         free_movement=v2xcl_dmove,
+         freedom_from_slavery=v2xcl_slave)
+
+# merging df with vdem df
+df <- left_join(df,vdem_df, by=c("iso_code"="country_text_id","year"="year"))
+
+# reading data from team google spreadsheet----
+conflict_economy_df <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vTrNaSHs6itvG-rvlhWjXZylNEi_eOZnFNT0_ugde2ySaebr-OPhPDsSWCOsyhI0Y6iCRruAxhJqKxk/pub?output=csv") %>% 
+  select(year, iso_code, displacement_event,
+         ext_conflict, int_conflict, battle_deaths, 
+         elect_violence, cpi_inflation, life_exp, fe_etfra, 
+         fdipercent, gdp, gdppc, gdppcgrowth, oilpercent, 
+         urban, totalpop, 
+         edu_primary, region, income)
+
+# merging df with vdem df
+df <- left_join(df,conflict_economy_df, by=c("iso_code"="iso_code","year"="year"))
+
+# create displacement_event and refugees/populations
+df$displacement_event <- cut(df$refugees, breaks = c(1,1000, 10000,100000,500000,Inf), 
+                             labels = c("micro", "small","medium","large", "full"))
+df$refugeespc <- df$refugees/df$totalpop
+  
+# read shape file and merge with df (source:ARcGIS Hub)
+map <- st_read("Data/World_Countries__Generalized_.shp")
+map$iso3<- countrycode::countrycode(map$ISO, origin = 'iso2c', destination = 'iso3c')
+
+df_map <- left_join(map, df, by=c("iso3"="iso_code"))
+df_map <- df_map %>% 
+  select(-FID, -COUNTRY, -ISO, -COUNTRYAFF, -AFF_ISO) %>% 
+  filter(!is.na(country_origin))
+
+# removing other data frames from environment----
+rm(conflict_economy_df,natevent_df,refugee_df,vdem_df,map)
+
+#______________________________________________________________________________
+# Background - using map 
+
+# The percent of refugees 
+map1<- df_map %>%
+  filter(year==2010) %>%
+  ggplot() +
+  geom_sf(data = df_map ,col="black", size=0.1, fill="white") +
+  geom_sf(aes(fill = refugeespc))+
+  scale_fill_gradient2(
+    low = muted("red"),
+    mid = "white",
+    high = muted("blue")
+  )+
+  theme_void() +
+  labs(title = "The Percent of Refugees (% of Population) \nin Sub-Saharan Africa and Americas in 2010")
+map1 
+
+# The magnitude of displacement event 
+map2<-df_map %>% 
+  filter(year==2010) %>% 
+  ggplot()+
+  geom_sf(aes(fill=displacement_event), color = "black")+
+  coord_sf(datum = NA) +
+  theme_minimal() +
+  scale_fill_manual(values = c("purple", viridis::viridis(4))) +
+  labs(title = "The Magnitude of Displacement Event \nin Americas and Sub-Saharan Africa in 2010")
+map2
+
+# VI
+tree <- rpart(refugeespc ~., data = subset(df, select = c(-IDPs, -refugees)))
+
+vip(tree, num_features = 10, geom = "point", horizontal = FALSE,
+    aesthetics = list(color = "red", shape = 17, size = 5)) +
+  theme_light()+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+vi(tree)
+
+#_____________________________________________________________________________________________________________________________________________________________________________________________
+# machine learning starts here----
+
+# select variables 
+df2 <- select(df, -iso_code)
 df2 <- na.locf(df2)
 
 set.seed(20201020)
@@ -39,9 +157,10 @@ disp_train <- training(x = disp_split)
 disp_test <- testing(x = disp_split)
 
 # create recipe
-disp_recipe <- recipe(refugees ~ ., data = disp_train) %>%
-  update_role(year, country_origin, new_role = "ID") #keep the ID variables for future reference
-
+disp_recipe <- recipe(refugeespc ~ ., data = disp_train) %>%
+  update_role(year, country_origin, new_role = "ID")  %>% #keep the ID variables for future reference
+  step_dummy(all_nominal_predictors())
+  
 # create resamples 
 disp_cv <- vfold_cv(data = disp_train, v = 5)
 
@@ -96,12 +215,13 @@ knn_fit_test <-
 disp_pred <- predict(knn_fit_test, disp_test)
 
 # df with predictions
-model_pred <- bind_cols(disp_test$refugees, disp_pred)
-model_pred <- rename(model_pred, refugees = ...1, prediction = .pred)
+model_pred <- bind_cols(disp_test$refugeespc, disp_pred)
+model_pred <- rename(model_pred, refugeespc = ...1, prediction = .pred)
+model_pred
 
 # calculate RMSE
-rmse(model_pred, truth = refugees, estimate = prediction)
-rsq(model_pred, truth = refugees, estimate = prediction)
+rmse(model_pred, truth = refugeespc, estimate = prediction)
+rsq(model_pred, truth = refugeespc, estimate = prediction)
 
 ##################################################################################################
 
@@ -153,13 +273,13 @@ final_res %>%
 # df with predictions
 model2_pred <- final_res %>% collect_predictions() 
 
-model2_pred <- select(model2_pred, refugees, .pred)
-
+model2_pred <- select(model2_pred, refugeespc, .pred)
 model2_pred <- rename(model2_pred, prediction = .pred)
+model2_pred
 
 # metrics
-rmse(model2_pred, truth = refugees, estimate = prediction)
-rsq(model2_pred, truth = refugees, estimate = prediction)
+rmse(model2_pred, truth = refugeespc, estimate = prediction)
+rsq(model2_pred, truth = refugeespc, estimate = prediction)
 
 ##################################################################################################
 
@@ -193,33 +313,17 @@ tree_fit_test <-
 model3_pred <- predict(tree_fit_test, disp_test)
 
 # df with predictions
-model3_pred <- bind_cols(disp_test$refugees, model3_pred)
-model3_pred <- rename(model3_pred, refugees = ...1, prediction = .pred)
+model3_pred <- bind_cols(disp_test$refugeespc, model3_pred)
+model3_pred <- rename(model3_pred, refugeespc = ...1, prediction = .pred)
+model3_pred
 
 # metrics
-rmse(model3_pred, truth = refugees, estimate = prediction)
-rsq(model3_pred, truth = refugees, estimate = prediction)
+rmse(model3_pred, truth = refugeespc, estimate = prediction)
+rsq(model3_pred, truth = refugeespc, estimate = prediction)
 
 ##################################################################################################
 
 # CLASSIFICATION MODELS #
-
-df <- read_excel("/Users/ankushi/Desktop/disp2.xlsx")
-
-df2 <- df %>% slice(1:1417)
-
-
-df2 <- select(df, displacement_event, year, country_origin, 
-              asylum_seekers, IDPs, 
-              ext_conflict, int_conflict, battle_deaths, 
-              elect_violence, cpi_inflation, life_exp, fe_etfra, 
-              fdipercent, gdp, gdppc, gdppcgrowth, oilpercent, 
-              urban, totalpop, totaff_natevents)
-
-df2$displacement_event <- as.factor(df2$displacement_event)
-df2 <- as.numeric(df2)
-df2 <- mutate_at(df2, "totaff_natevents", ~replace(., is.na(.), 0))
-df2 <- na.locf(df2)
 
 set.seed(20211117)
 
@@ -236,7 +340,9 @@ set.seed(20201020)
 disp_recipe <- recipe(displacement_event ~ ., data = disp_train) %>%
   themis::step_downsample(displacement_event) %>% #since the EDA shows class imbalance in the data toward "micro" and "small" displacement events
   update_role(year, country_origin, new_role = "ID") %>% #keep the ID variables for future reference
-  step_normalize(all_numeric_predictors()) #scale and center the predictors 
+  step_normalize(all_numeric_predictors()) %>%  #scale and center the predictors 
+  step_dummy(all_nominal_predictors())  
+  
 
 # create resamples 
 disp_cv <- vfold_cv(data = disp_train, v = 5)
@@ -288,7 +394,8 @@ disp_pred <- predict(best_knn_fit, disp_test)
 # df with predictions
 model4_pred <- bind_cols(disp_test$displacement_event, disp_pred)
 model4_pred <- rename(model4_pred, event = ...1, 
-                      prediction = .pred_class)
+                      prediction = .pred)
+model4_pred
 
 # accuracy 
 accuracy(model4_pred, truth = event, estimate = prediction)
@@ -385,11 +492,12 @@ model6_pred <- predict(tree_fit_test, disp_test)
 # df with predictions
 model6_pred <- bind_cols(disp_test$displacement_event, model6_pred)
 model6_pred <- rename(model6_pred, event = ...1, prediction = .pred_class)
+model6_pred
 
 # metrics
 accuracy(model6_pred, truth = event, estimate = prediction)
 
-
+#_______________________________________________________________________________
 
 
 
