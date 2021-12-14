@@ -76,7 +76,7 @@ df <- left_join(df,vdem_df, by=c("iso_code"="country_text_id","year"="year"))
 conflict_economy_df <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vTrNaSHs6itvG-rvlhWjXZylNEi_eOZnFNT0_ugde2ySaebr-OPhPDsSWCOsyhI0Y6iCRruAxhJqKxk/pub?output=csv") %>% 
   select(year, iso_code, displacement_event,
          ext_conflict, int_conflict, battle_deaths, 
-         elect_violence, cpi_inflation, life_exp, fe_etfra, 
+         elect_violence, cpi_inflation, life_exp, 
          fdipercent, gdp, gdppc, gdppcgrowth, oilpercent, 
          urban, totalpop, 
          edu_primary, region, income)
