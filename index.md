@@ -28,6 +28,14 @@ If we take a closer look at Colombia, we can observe that there is a drastic inc
 
 ![Image](https://github.com/aamitra/final_project/blob/main/refugees_colombia.png)
 
+Visually, there are also higher concentrations of refugees as percent of the total population in Colombia and Somalia as comapred to other countries in Latin America and the Caribbean and Sub-Saharan Africa.
+
+![Image](https://github.com/aamitra/final_project/blob/main/map-refugees.png)
+
+Furthermore, the magnitude of displacement events defined as micro (< 1,000 refugees), small (1,000-10,000 refugees), medium (10,000-100,000 refugees), large (100,000-500,000 refugees), and full-scale (> 500,000 refugees) in countries of origin, can observed below. Machine Learning models could be used to predict where and what magnitude of humanitarian crises may happen, and allow communities to use this information to prepare.
+
+![Image)(https://github.com/aamitra/final_project/blob/main/map-disevent.png)
+
 ### Predicting Displacement By Volume and Category
 
 Organizations involved in refugee response primarily design operational procedures around categories of displacement. The UN High Commission for Refugees, for example, has developed its Refugee Coordination Model with a focus on the scale, location, and duration of displacement, highlighting, in its response criteria, “small, “medium,” and “large” emergencies, short-term and protracted crisis, and encamped and out-of-camp displacement. More recently, due to high volumes of displacement in the Middle East and North Africa (MENA), Horn of Africa, and South Asia, there has also been a growing interest in predicting movements. Scholars like Carammia et al. [(2020)](https://arxiv.org/abs/2011.04348), Havas et al. [(2021)](https://www.mdpi.com/2220-9964/10/8/498), Schutte et al. [(2021)](https://www.nature.com/articles/s41467-021-22255-4), and Micevska [(2021)](https://www.sciencedirect.com/science/article/abs/pii/S0176268021000446) have explored machine learning approaches to refugee forecasting, and projects such as UNHCR’s [Jetson](https://jetson.unhcr.org/) are seeking to deploy this approach in refugee response operations. In this context, we constructed six machine learning models that attempt to predict (a) refugee movements by category or magnitude using classification methods and (b) refugee movements by volume using regression methods. 
