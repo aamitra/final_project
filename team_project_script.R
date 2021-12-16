@@ -278,8 +278,10 @@ vi(tree)
 # machine learning starts here----
 
 set.seed(20201020)
-df<-na.omit(df)
+df <- na.omit(df)
 
+# removing variables mechanically oriented with refugees variable
+df_regression <- df %>% select(-refugeespc,-displacement_event)
 # create split object
 df_split <- initial_split(data = df, prop = 0.90)
 
@@ -455,8 +457,9 @@ rmse_3_refugee_models
 #_____________________________________________________________________________________________________________________________________________________________________________________________
 #_____________________________________________________________________________________________________________________________________________________________________________________________
 
+#removing variables mechanically related to displacement event size and other variables that do not allow models to run successfully
 df_classification <- df %>% 
-  select(-temp_heat_wave, -insect_infestation, -tsunami, -ext_conflict, -ext_conflict)
+  select(-refugees,-refugeespc,-temp_heat_wave, -insect_infestation, -tsunami, -ext_conflict, -ext_conflict)
 
 set.seed(20211117)
 
