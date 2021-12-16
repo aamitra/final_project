@@ -41,7 +41,7 @@ vdem_df <- vdemdata::vdem %>%
   filter(year>=1990 & year<=2020) %>%  
   select(-ends_with(c("ord","osp","codehigh","codelow","_sd","mean","_nr"))) %>% 
   arrange(country_name)
-unique(vdem_df$country_name)
+
 # selecting target government variables from v-dem 
 vdem_df <- vdem_df %>% 
   select(country_text_id,
@@ -73,16 +73,11 @@ df <- left_join(df,vdem_df, by=c("iso_code"="country_text_id","year"="year"))
 
 # reading data from team google spreadsheet----
 conflict_economy_df <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vTrNaSHs6itvG-rvlhWjXZylNEi_eOZnFNT0_ugde2ySaebr-OPhPDsSWCOsyhI0Y6iCRruAxhJqKxk/pub?output=csv") %>% 
-  select(year,iso_code, 
-         ext_conflict, int_conflict, battle_deaths, 
-         elect_violence, cpi_inflation, life_exp, fe_etfra, 
-         fdipercent, gdp, gdppc, gdppcgrowth, oilpercent, 
-         urban, totalpop)
-  select(year, iso_code,
-         ext_conflict, int_conflict, battle_deaths, 
-         elect_violence, cpi_inflation, life_exp,
-         fdipercent, gdp, gdppc, gdppcgrowth, oilpercent, 
-         urban, totalpop, edu_primary, region, income)
+select(year, iso_code,
+       ext_conflict, int_conflict, battle_deaths, 
+       elect_violence, cpi_inflation, life_exp,
+       fdipercent, gdp, gdppc, gdppcgrowth, oilpercent, 
+       urban, totalpop, region, income)
 
 # merging df with vdem df
 df <- left_join(df,conflict_economy_df, by=c("iso_code"="iso_code","year"="year"))
@@ -94,7 +89,7 @@ rm(conflict_economy_df,natevent_df,refugee_df,vdem_df)
 df$displacement_event <- cut(df$refugees, breaks = c(1,1000, 10000,100000,500000,Inf), 
                              labels = c("micro", "small","medium","large", "full"))
 df$refugeespc <- df$refugees/df$totalpop*100
-  
+
 # read shape file and merge with df (source:ARcGIS Hub)
 map <- st_read("Data/World_Countries__Generalized_.shp")
 map$iso3<- countrycode::countrycode(map$ISO, origin = 'iso2c', destination = 'iso3c')
@@ -104,14 +99,14 @@ df_map <- df_map %>%
   select(-FID, -COUNTRY, -ISO, -COUNTRYAFF, -AFF_ISO) %>% 
   filter(!is.na(country_origin))
 
-# removing other data frames from environment----
-rm(natevent_df,refugee_df,vdem_df,map)
+# removing other data frame from environment----
+rm(map)
 
 #______________________________________________________________________________
 # Descriptive statistics and exploratory data----
 
 conflict_economy_df <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vTrNaSHs6itvG-rvlhWjXZylNEi_eOZnFNT0_ugde2ySaebr-OPhPDsSWCOsyhI0Y6iCRruAxhJqKxk/pub?output=csv") 
-  
+
 # Creating variable = 1 if year<2001
 conflict_economy_df$decade <- ifelse(conflict_economy_df$year<=2000,1,0)
 
@@ -278,77 +273,77 @@ vip(tree, num_features = 10, geom = "point", horizontal = FALSE,
 vi(tree)
 
 #_____________________________________________________________________________________________________________________________________________________________________________________________
+#_____________________________________________________________________________________________________________________________________________________________________________________________
+
 # machine learning starts here----
 
 set.seed(20201020)
+df<-na.omit(df)
 
 # create split object
-disp_split <- initial_split(data = df2, prop = 0.90)
+df_split <- initial_split(data = df, prop = 0.90)
 
 # create training and testing data
-disp_train <- training(x = disp_split)
-disp_test <- testing(x = disp_split)
+df_train <- training(x = df_split)
+df_test <- testing(x = df_split)
 
 # create recipe
-disp_recipe <- recipe(refugees ~ ., data = disp_train) %>%
-  update_role(year, country_origin, new_role = "ID")  %>% #keep the ID variables for future reference
-  step_dummy(all_nominal_predictors())
-  
+regression_recipe <- recipe(refugees ~ ., data = df_train) #%>%
+  #update_role(year, country_origin, new_role = "ID") # %>% #keep the ID variables for future reference
+  #step_dummy(all_nominal_predictors())
+
 # create resamples 
-disp_cv <- vfold_cv(data = disp_train, v = 5)
+df_resamples <- vfold_cv(data = df_train, v = 5)
 
-# knn with resampling and hyperparameter tuning 
+# KNN Refugees Model (Model 1) with resampling and hyperparameter tuning ----
 
-## model specification 
+## specifying knn model  
 knn <- nearest_neighbor(neighbors = tune()) %>%
   set_engine(engine = "kknn") %>%
   set_mode(mode = "regression") 
 knn
 
-## create workflow 
+## creating knn workflow 
 knn_workflow <-
   workflow() %>%
   add_model(knn) %>%
-  add_recipe(disp_recipe)
+  add_recipe(regression_recipe)
 
-## create tuning grid 
+## creating tuning grid 
 knn_grid <- tibble(neighbors = seq(from = 1, to = 30, by = 2))
 knn_grid
 
 ## resampling models for tuning grid 
 knn_grid_rs <-
   knn_workflow %>%
-  tune_grid(resamples = disp_cv,
+  tune_grid(resamples = df_resamples,
             grid = knn_grid,
             control = control_grid(save_pred = TRUE))
 
 ## evaluate the resampling models and select best 
 knn_grid_rs %>% collect_metrics()          
 knn_grid_rs %>% show_best(metric = "rmse")
+
 best_knn <- knn_grid_rs %>% select_best(metric = "rmse")
-knn_grid_rs %>% collect_predictions()
 
 ## best model
 best_knn_workflow <- knn_workflow %>%
   finalize_workflow(best_knn)
 
-set.seed(7)
-knn_best_rs <- 
-  best_knn_workflow %>%
-  fit_resamples(resamples = disp_cv) 
+knn_best_rs <- best_knn_workflow %>%
+  fit_resamples(resamples = df_resamples) 
 
 collect_metrics(knn_best_rs)
 
 # train the model on the training set 
-knn_fit_test <-
-  knn_workflow %>%
-  fit(data = disp_train)
+knn_fit_test <- knn_workflow %>%
+  fit(data = df_train)
 
 # predictions using testing set 
-disp_pred <- predict(knn_fit_test, disp_test)
+disp_pred <- predict(knn_fit_test, df_test)
 
 # df with predictions
-model_pred <- bind_cols(disp_test$refugees, disp_pred)
+model_pred <- bind_cols(df_test$refugees, disp_pred)
 model_pred <- rename(model_pred, refugees = ...1, prediction = .pred)
 model_pred
 
@@ -356,128 +351,130 @@ model_pred
 rmse(model_pred, truth = refugees, estimate = prediction)
 rsq(model_pred, truth = refugees, estimate = prediction)
 
-##################################################################################################
+#_____________________________________________________________________________________________________________________________________________________________________________________________
+#_____________________________________________________________________________________________________________________________________________________________________________________________
 
-# random forest
+# Random Forest Refugees Model (Model 2)----
 
 ## model 
-tune_spec <- rand_forest(
-  mtry = tune(),
-  trees = 1000,
-  min_n = tune()
-) %>%
-  set_mode("regression") %>%
-  set_engine("ranger")
+rf_mod <- rand_forest() %>%
+  set_engine(engine="ranger") %>%
+  set_mode(mode="regression") 
 
-tune_wf <- workflow() %>%
-  add_recipe(disp_recipe) %>%
-  add_model(tune_spec)
+# creating a random forest model workflow
+rf_wf <- workflow() %>%
+  add_recipe(regression_recipe) %>%
+  add_model(rf_mod) 
 
-set.seed(7)
-tune_res <- tune_grid(
-  tune_wf,
-  resamples = disp_cv,
-  grid = 10
-)
-tune_res
+# estimating the random forest model across the 5 folds
+rf_fit_rs <- rf_wf %>%
+  fit_resamples(resamples = df_resamples, 
+                metrics = metric_set(rmse,mae),
+                control = control_resamples(save_pred = TRUE))
 
-tune_res %>% collect_metrics() 
-tune_res %>% show_best(metric = "rmse")
-best_rf <- tune_res %>% select_best(metric = "rmse")
+# rf with predictions
+model2_pred_rf <- rf_fit_rs %>% collect_predictions() 
 
-## best model
-
-final_rf <- finalize_model(
-  tune_spec,
-  best_rf
-)
-final_rf
-
-final_wf <- workflow() %>%
-  add_recipe(disp_recipe) %>%
-  add_model(final_rf)
-
-final_res <- final_wf %>%
-  last_fit(disp_split)
-
-final_res %>%
-  collect_metrics()
-
-# df with predictions
-model2_pred <- final_res %>% collect_predictions() 
-
-model2_pred <- select(model2_pred, refugees, .pred)
-model2_pred <- rename(model2_pred, prediction = .pred)
+model2_pred_rf <- select(model2_pred_rf, refugees, .pred)
+model2_pred_rf <- rename(model2_pred_rf, prediction = .pred)
 
 # metrics
-rmse(model2_pred, truth = refugees, estimate = prediction)
-rsq(model2_pred, truth = refugees, estimate = prediction)
+rmse(model2_pred_rf, truth = refugees, estimate = prediction)
+rsq(model2_pred_rf, truth = refugees, estimate = prediction)
 
-##################################################################################################
+#_____________________________________________________________________________________________________________________________________________________________________________________________
+#_____________________________________________________________________________________________________________________________________________________________________________________________
 
-# CART
+# Decision Tree refugree model (Model 3) ----
 
 ## model specification 
-decision_tree <- decision_tree() %>%
+dtree_mod <- decision_tree() %>%
   set_engine(engine = "rpart") %>%
   set_mode(mode = "regression")
 
 ## workflow 
-tree_workflow <-
+dtree_wf <-
   workflow() %>%
-  add_model(decision_tree) %>%
-  add_recipe(disp_recipe)
+  add_model(dtree_mod) %>%
+  add_recipe(regression_recipe)
 
 # resampling models for random forest model
-set.seed(7)
-tree_fit_rs <-
-  tree_workflow %>%
-  fit_resamples(resamples = disp_cv) 
+dtree_fit_rs <-
+  dtree_wf %>%
+  fit_resamples(resamples = df_resamples) 
 
-collect_metrics(tree_fit_rs)
+collect_metrics(dtree_fit_rs)
 
 # train the best model on the training set 
-tree_fit_test <-
-  tree_workflow %>%
-  fit(data = disp_train)
+dtree_fit_train <-
+  dtree_wf %>%
+  fit(data = df_train)
 
 # predictions using testing set 
-model3_pred <- predict(tree_fit_test, disp_test)
+model3_pred_dtree <- predict(dtree_fit_train, df_test)
 
 # df with predictions
-model3_pred <- bind_cols(disp_test$refugees, model3_pred)
-model3_pred <- rename(model3_pred, refugees = ...1, prediction = .pred)
-model3_pred
+model3_pred_dtree <- bind_cols(df_test$refugees, model3_pred_dtree)
+model3_pred_dtree <- rename(model3_pred_dtree, refugees = ...1, prediction = .pred)
+model3_pred_dtree
 
 # metrics
-rmse(model3_pred, truth = refugees, estimate = prediction)
-rsq(model3_pred, truth = refugees, estimate = prediction)
+rmse(model3_pred_dtree, truth = refugees, estimate = prediction)
+rsq(model3_pred_dtree, truth = refugees, estimate = prediction)
 
-##################################################################################################
+#_____________________________________________________________________________________________________________________________________________________________________________________________
+#_____________________________________________________________________________________________________________________________________________________________________________________________
 
-df3 <- df2 %>% 
+# plotting the predictive performances of the three models----
+model1_knn_mae_rmse <- collect_metrics(knn_best_rs, summarize=FALSE) %>% mutate(model_type="knn")
+model2_rf_mae_rmse <- collect_metrics(rf_fit_rs, summarize=FALSE) %>% mutate(model_type="rand_forest")
+model3_pred_dtree_mae_rmse <- collect_metrics(dtree_fit_rs, summarize=FALSE) %>% mutate(model_type="dec_tree")
+all_refugee_models_allfolds_rmse_mae <- rbind(model1_knn_mae_rmse, model2_rf_mae_rmse,model3_pred_dtree_mae_rmse) %>% 
+  pivot_wider(names_from=c(model_type, .metric), values_from=.estimate)
+knitr::kable(all_refugee_models_allfolds_rmse_mae)
+
+# plotting the RMSE across the 5 resamples for the 3 different models
+rmse_3_refugee_models <- all_refugee_models_allfolds_rmse_mae %>% 
+  ggplot()+
+  geom_line(aes(y=rand_forest_rmse, x=id, group=.estimator, col="Random Forest"), size=2)+
+  geom_line(aes(y=knn_rmse, x=id, group=.estimator, col="KNN, K=15"), size=2)+
+  geom_line(aes(y=dec_tree_rmse, x=id, group=.estimator, col="Decision Tree"), size=2)+
+ # scale_y_continuous(limits=c(1.5,3.5))+
+  scale_color_manual(name="Model Type", values=c("red","blue","green"))+
+  labs(title="Calculated RMSE Across the 5 Folds for the 3 Different Models",
+       y="RMSE_hat",
+       x="Fold id")+
+  theme_minimal()
+rmse_3_refugee_models
+
+#_____________________________________________________________________________________________________________________________________________________________________________________________
+#_____________________________________________________________________________________________________________________________________________________________________________________________
+
+# Classification Models Start Here----
+
+#_____________________________________________________________________________________________________________________________________________________________________________________________
+#_____________________________________________________________________________________________________________________________________________________________________________________________
+
+df_classification <- df %>% 
   select(-temp_heat_wave, -insect_infestation, -tsunami, -ext_conflict, -ext_conflict)
 
-# CLASSIFICATION MODELS #
 set.seed(20211117)
 
 # create split object
-disp_split <- initial_split(data = df3, prop = 0.90)
+df_class_split <- initial_split(data = df_classification, prop = 0.90)
 
 # create training and testing data
-disp_train <- training(x = disp_split)
-disp_test <- testing(x = disp_split)
-
-set.seed(20201020)
+df_class_train <- training(x = df_class_split)
+df_class_test <- testing(x = df_class_split)
 
 # create recipe
-disp_recipe <- recipe(displacement_event ~ ., data = disp_train) %>%
+classification_recipe <- recipe(displacement_event ~ ., data = df_class_train) %>%
   themis::step_downsample(displacement_event) %>% #since the EDA shows class imbalance in the data toward "micro" and "small" displacement events
   update_role(year, country_origin, new_role = "ID") %>% #keep the ID variables for future reference
   step_normalize(all_numeric_predictors()) #scale and center the predictors 
 
 # create resamples 
-disp_cv <- vfold_cv(data = disp_train, v = 5)
+disp_cv <- vfold_cv(data = df_class_train, v = 5)
 
 # knn with resampling and hyperparameter tuning 
 
@@ -491,7 +488,7 @@ knn
 knn_workflow <-
   workflow() %>%
   add_model(knn) %>%
-  add_recipe(disp_recipe)
+  add_recipe(classification_recipe)
 
 ## create tuning grid 
 knn_grid <- tibble(neighbors = seq(from = 1, to = 30, by = 2))
@@ -517,14 +514,14 @@ best_knn_workflow <- knn_workflow %>%
 ## train the best model on the training set 
 best_knn_fit <- 
   best_knn_workflow %>%
-  fit(data=disp_train)
+  fit(data=df_class_train)
 best_knn_fit
 
 # predictions using testing set 
-disp_pred <- predict(best_knn_fit, disp_test)
+disp_pred <- predict(best_knn_fit, df_class_test)
 
 # df with predictions
-model4_pred <- bind_cols(disp_test$displacement_event, disp_pred)
+model4_pred <- bind_cols(df_class_test$displacement_event, disp_pred)
 model4_pred <- rename(model4_pred, event = ...1, 
                       prediction = .pred_class)
 
@@ -545,7 +542,7 @@ tune_spec <- rand_forest(
   set_engine("ranger")
 
 tune_wf <- workflow() %>%
-  add_recipe(disp_recipe) %>%
+  add_recipe(classification_recipe) %>%
   add_model(tune_spec)
 
 set.seed(7)
@@ -569,11 +566,11 @@ final_rf <- finalize_model(
 final_rf
 
 final_wf <- workflow() %>%
-  add_recipe(disp_recipe) %>%
+  add_recipe(classification_recipe) %>%
   add_model(final_rf)
 
 final_res <- final_wf %>%
-  last_fit(disp_split)
+  last_fit(df_class_split)
 
 final_res %>%
   collect_metrics()
@@ -602,7 +599,7 @@ decision_tree <- decision_tree() %>%
 tree_workflow <-
   workflow() %>%
   add_model(decision_tree) %>%
-  add_recipe(disp_recipe)
+  add_recipe(classification_recipe)
 
 # resampling models for random forest model
 set.seed(7)
@@ -615,13 +612,13 @@ collect_metrics(tree_fit_rs)
 # train the best model on the training set 
 tree_fit_test <-
   tree_workflow %>%
-  fit(data = disp_train)
+  fit(data = df_class_train)
 
 # predictions using testing set 
-model6_pred <- predict(tree_fit_test, disp_test)
+model6_pred <- predict(tree_fit_test, df_class_test)
 
 # df with predictions
-model6_pred <- bind_cols(disp_test$displacement_event, model6_pred)
+model6_pred <- bind_cols(df_class_test$displacement_event, model6_pred)
 model6_pred <- rename(model6_pred, event = ...1, prediction = .pred_class)
 
 # metrics
@@ -636,6 +633,5 @@ rmse(model3_pred, truth = refugees, estimate = prediction)
 
 accuracy(model5_pred, truth = displacement_event, estimate = prediction)
 accuracy(model6_pred, truth = event, estimate = prediction)
-
 
 
