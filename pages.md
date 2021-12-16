@@ -15,6 +15,10 @@ Apart from analyzing quantitative data, it is important to integrate contextual 
 
 ![Image](https://github.com/aamitra/final_project/blob/main/refugees_country_africa_2.png)
 
+In the Americas, we can observe that Colombia has a significantly higher number of refugees reported in the same period (1990-2020). Colombia's recent history includes internal conflicts related to drug cartels, politics, and guerrillas. Again, we are not making causal inferences here about the relationship between these events and displacement of people, but considering the context in which these movements of people are happening can help us develop a more holistic model and analysis.
+
+![Image](https://github.com/aamitra/final_project/blob/main/refugees_country_americas.png)
+
 ### Predicting Displacement By Volume and Category
 
 Organizations involved in refugee response primarily design operational procedures around categories of displacement. The UN High Commission for Refugees, for example, has developed its Refugee Coordination Model with a focus on the scale, location, and duration of displacement, highlighting, in its response criteria, “small, “medium,” and “large” emergencies, short-term and protracted crisis, and encamped and out-of-camp displacement. More recently, due to high volumes of displacement in the Middle East and North Africa (MENA), Horn of Africa, and South Asia, there has also been a growing interest in predicting movements. Scholars like Carammia et al. [(2020)](https://arxiv.org/abs/2011.04348), Havas et al. [(2021)](https://www.mdpi.com/2220-9964/10/8/498), Schutte et al. [(2021)](https://www.nature.com/articles/s41467-021-22255-4), and Micevska [(2021)](https://www.sciencedirect.com/science/article/abs/pii/S0176268021000446) have explored machine learning approaches to refugee forecasting, and projects such as UNHCR’s [Jetson](https://jetson.unhcr.org/) are seeking to deploy this approach in refugee response operations. In this context, we constructed six machine learning models that attempt to predict (a) refugee movements by category or magnitude using classification methods and (b) refugee movements by volume using regression methods. 
@@ -28,3 +32,17 @@ First, for our regression approach, we used K-nearest neighbors with hyperparame
 ![Image](https://github.com/aamitra/final_project/blob/f58bd82170fe6b2015bc63ab90bdc7a1fddcff36/rmse.png)
 
 Second, for our classification approach, we continued to develop K-nearest neighbors with hyperparameter tuning, random forest with hyperparameter tuning, and CART algorithms and specified prediction accuracy as our criteria for analyzing the models in comparison. We found that our random forest model continued to have the strongest accuracy at 0.91 (compared to 0.84 for KNN and 0.75 for CART) in evaluation. While our best regression model is overpredicting specific volumes of displacement, this classification model appears to offer strong insights on the scale of displacement more broadly. Operational guidelines for refugee response are generally designed in this manner due to the rapidly evolving nature of particular displacement events, and such ML-based classification models may thus be a valuable addition to existing approaches for designing refugee response guidelines.    
+
+
+[Link](url) and ![Image](src)
+```
+
+For more details see [Basic writing and formatting syntax](https://docs.github.com/en/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax).
+
+### Jekyll Themes
+
+Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/aamitra/final_project/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+
+### Support or Contact
+
+Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
