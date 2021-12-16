@@ -110,9 +110,6 @@ conflict_economy_df <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-
 # Creating variable = 1 if year<2001
 conflict_economy_df$decade <- ifelse(conflict_economy_df$year<=2000,1,0)
 
-#I would like to add a comparison of # of refugees between 1990-2000 and 2001-2020
-# I would add the dummy variable "decade" to the group_by command
-
 # Some exploratory data analysis with the data.
 plot1 <- conflict_economy_df %>%
   group_by(income) %>%
@@ -123,9 +120,12 @@ plot1 <- conflict_economy_df %>%
   geom_col(mapping = aes(x = income, y = refugees_income, fill = income))+
   xlab("Country Income Level") +
   ylab("# of Refugees") +
-  labs(title = "From 1990 - 2000, Countries with Lower Income Levels Show Higher Number of Refugees")+
+  labs(title = "From 1990 - 2000, there have been higher number of refugees \n from lower income countries", subtitle = "There were almost 45 million refugees from low income countries alone")+
   labs(caption = "Data comes from 1990 to 2000")+
   scale_y_continuous(breaks = seq(0, 45000000, by = 5000000))+
+  theme(axis.text.y = element_text(size=8,color="black")) +
+  theme(axis.text.x = element_text(size=5,color="black")) +
+  theme(axis.text.x = element_text(angle=90, vjust=.5, hjust=1))+
   theme_minimal()+
   theme(legend.position = "none")
 plot1
@@ -163,8 +163,8 @@ refugees_country_africa <-ggplot(data = refugees_by_country_Africa) +
   coord_flip() +
   labs(title = "Somalia, followed by Sudan, has the highest number of refugees \n in the Sub-Saharan region across the last two decades ", x="", y="Refugees",fill="Country", 
        subtitle = paste(mean_refugees_SA,"mean refugees by country")) +
-  theme(plot.title = element_text(size=15, hjust=0.5,face="bold")) +
-  theme(plot.subtitle = element_text(size=12, hjust=0.5)) +
+  theme(plot.title = element_text(size=10, hjust=0.5,face="bold")) +
+  theme(plot.subtitle = element_text(size=9, hjust=0.5)) +
   theme(panel.background = element_rect(fill = "white", color="black")) +
   theme(axis.text.y = element_text(size=8,color="black")) +
   theme(axis.text.x = element_text(size=8,color="black")) +
@@ -198,8 +198,8 @@ refugees_country_americas<- ggplot(data = refugees_by_country_Americas) +
   coord_flip() +
   labs(title = "Colombia has a drastically higher number of reported refugees \n than other LATAM countries (mean 240,329)", x="", y="Refugees",fill="Country", 
        subtitle = paste(mean_refugees_A,"mean refugees by country")) +
-  theme(plot.title = element_text(size=15, hjust=0.5,face="bold")) +
-  theme(plot.subtitle = element_text(size=12, hjust=0.5)) +
+  theme(plot.title = element_text(size=10, hjust=0.5,face="bold")) +
+  theme(plot.subtitle = element_text(size=9, hjust=0.5)) +
   theme(panel.background = element_rect(fill = "white", color="black")) +
   theme(axis.text.y = element_text(size=8,color="black")) +
   theme(axis.text.x = element_text(size=8,color="black")) +
@@ -222,7 +222,7 @@ Colombia_refugees_year<- Colombia_df %>%
   ggplot() +
   geom_line(mapping = aes(x = year, y=refugees_Colombia), stat="identity", color="black")+
   labs(title = "In 2007, Colombia's number of refugees peaked", x="Year", y="Number of Refugees", 
-       subtitle = "After 2017, the number of refugees in Colombia dropped \n and then continued to decrease at a slower pace") +
+       subtitle = "There was a drastic rise in refugees \n from Colombia from 2006 to 2007") +
   theme(plot.title = element_text(size=15, hjust=0.5,face="bold")) +
   theme(plot.subtitle = element_text(size=12, hjust=0.5)) +
   theme(panel.background = element_rect(fill = "white", color="black")) +
@@ -233,6 +233,7 @@ Colombia_refugees_year<- Colombia_df %>%
   scale_y_continuous(limits = c(0, 600000),breaks = seq(0,600000, 50000))
 
 Colombia_refugees_year
+
 #________________________________________________________________________________
 # Background - using map 
 
