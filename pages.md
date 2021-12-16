@@ -4,6 +4,12 @@ The number of forcibly displaced persons, including refugees, asylum-seekers, an
 
 Our Github repository can be found [here](https://github.com/aamitra/final_project.git). 
 
+### Descriptive Statistics
+
+This graph describes number of refugees by income tranche of origin country
+
+![Image](https://github.com/aamitra/final_project/blob/main/refugees_income.png)
+
 ### Predicting Displacement By Volume and Category
 
 Organizations involved in refugee response primarily design operational procedures around categories of displacement. The UN High Commission for Refugees, for example, has developed its Refugee Coordination Model with a focus on the scale, location, and duration of displacement, highlighting, in its response criteria, “small, “medium,” and “large” emergencies, short-term and protracted crisis, and encamped and out-of-camp displacement. More recently, due to high volumes of displacement in the Middle East and North Africa (MENA), Horn of Africa, and South Asia, there has also been a growing interest in predicting movements. Scholars like Carammia et al. [(2020)](https://arxiv.org/abs/2011.04348), Havas et al. [(2021)](https://www.mdpi.com/2220-9964/10/8/498), Schutte et al. [(2021)](https://www.nature.com/articles/s41467-021-22255-4), and Micevska [(2021)](https://www.sciencedirect.com/science/article/abs/pii/S0176268021000446) have explored machine learning approaches to refugee forecasting, and projects such as UNHCR’s [Jetson](https://jetson.unhcr.org/) are seeking to deploy this approach in refugee response operations. In this context, we constructed six machine learning models that attempt to predict (a) refugee movements by category or magnitude using classification methods and (b) refugee movements by volume using regression methods. 
