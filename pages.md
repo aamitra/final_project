@@ -4,11 +4,16 @@ The number of forcibly displaced persons, including refugees, asylum-seekers, an
 
 Our Github repository can be found [here](https://github.com/aamitra/final_project.git). 
 
-### Descriptive Statistics
+### Lower Income Countries Display Higher Number of Refugees
 
-This graph describes number of refugees by income tranche of origin country
+The significacntly higher number of refugees coming from lower income countries can lead us to look further into the causes of displacement.
 
 ![Image](https://github.com/aamitra/final_project/blob/main/refugees_income.png)
+
+
+Somalia and Sudan are the leading countries in number of refugees between 1990 and 2020 in the Sub-Saharan region.
+
+![Image](https://github.com/aamitra/final_project/blob/main/refugees_country_africa_2.png)
 
 ### Predicting Displacement By Volume and Category
 
