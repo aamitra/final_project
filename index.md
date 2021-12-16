@@ -34,7 +34,7 @@ Visually, there are also higher concentrations of refugees as percent of the tot
 
 Furthermore, the magnitude of displacement events defined as micro (< 1,000 refugees), small (1,000-10,000 refugees), medium (10,000-100,000 refugees), large (100,000-500,000 refugees), and full-scale (> 500,000 refugees) in countries of origin, can observed below. Machine Learning models could be used to predict where and what magnitude of humanitarian crises may happen, and allow communities to use this information to prepare.
 
-![Image)(https://github.com/aamitra/final_project/blob/main/map-disevent.png)
+![Image)](https://github.com/aamitra/final_project/blob/main/map-disevent.png)
 
 ### Predicting Displacement By Volume and Category
 
