@@ -358,6 +358,8 @@ rsq(model_pred, truth = refugees, estimate = prediction)
 
 # Random Forest Refugees Model (Model 2)----
 
+set.seed(20211210)
+
 ## model 
 rf_mod <- rand_forest() %>%
   set_engine(engine="ranger") %>%
@@ -388,6 +390,8 @@ rsq(model2_pred_rf, truth = refugees, estimate = prediction)
 #_____________________________________________________________________________________________________________________________________________________________________________________________
 
 # Decision Tree refugree model (Model 3) ----
+
+set.seed(20201020)
 
 ## model specification 
 dtree_mod <- decision_tree() %>%
@@ -472,7 +476,6 @@ df_class_test <- testing(x = df_class_split)
 
 # create recipe
 classification_recipe <- recipe(displacement_event ~ ., data = df_class_train) %>%
-  themis::step_downsample(displacement_event) %>% #since the EDA shows class imbalance in the data toward "micro" and "small" displacement events
   update_role(year, country_origin, new_role = "ID") %>% #keep the ID variables for future reference
   step_normalize(all_numeric_predictors()) #scale and center the predictors 
 
@@ -480,6 +483,8 @@ classification_recipe <- recipe(displacement_event ~ ., data = df_class_train) %
 disp_cv <- vfold_cv(data = df_class_train, v = 5)
 
 # knn with resampling and hyperparameter tuning 
+
+set.seed(20211210)
 
 ## model specification 
 knn <- nearest_neighbor(neighbors = tune()) %>%
@@ -534,6 +539,8 @@ accuracy(model4_pred, truth = event, estimate = prediction)
 ##################################################################################################
 
 # random forest with hyperparameter tuning
+
+set.seed(20211210)
 
 ## model 
 tune_spec <- rand_forest(
@@ -592,6 +599,8 @@ accuracy(model5_pred, truth = displacement_event,
 ##################################################################################################
 
 # CART
+
+set.seed(20211210)
 
 ## model specification 
 decision_tree <- decision_tree() %>%
