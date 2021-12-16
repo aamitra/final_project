@@ -263,7 +263,7 @@ map2<-df_map %>%
   labs(title = "The Magnitude of Displacement Event \nin Americas and Sub-Saharan Africa in 2010")
 map2
 
-# VI
+# VI - rpart
 tree <- rpart(refugees ~., data = subset(df, select = c(-IDPs, -refugeespc, -iso_code, -displacement_event, -country_origin)))
 
 vip(tree, num_features = 10, geom = "point", horizontal = FALSE,
@@ -272,6 +272,13 @@ vip(tree, num_features = 10, geom = "point", horizontal = FALSE,
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 vi(tree)
+
+# VI - random forest
+vi.rf <- randomForest(refugees ~ .,
+                      data= subset(df, select = c(-IDPs, -refugeespc, -iso_code, -displacement_event, -country_origin)),
+                      ntree=1000, keep.forest=FALSE,
+                      importance=TRUE)
+varImpPlot(vi.rf)
 
 #_____________________________________________________________________________________________________________________________________________________________________________________________
 #_____________________________________________________________________________________________________________________________________________________________________________________________
