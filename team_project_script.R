@@ -290,9 +290,9 @@ df_train <- training(x = df_split)
 df_test <- testing(x = df_split)
 
 # create recipe
-regression_recipe <- recipe(refugees ~ ., data = df_train) #%>%
-  #update_role(year, country_origin, new_role = "ID") # %>% #keep the ID variables for future reference
-  #step_dummy(all_nominal_predictors())
+regression_recipe <- recipe(refugees ~ ., data = df_train) %>%
+  update_role(year, country_origin, new_role = "ID")  %>% # keeping the ID variables for future reference
+  step_dummy(all_nominal_predictors())
 
 # create resamples 
 df_resamples <- vfold_cv(data = df_train, v = 5)
