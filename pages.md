@@ -20,7 +20,7 @@ In the Americas, we can observe that Colombia has a significantly higher number 
 
 ![Image](https://github.com/aamitra/final_project/blob/main/refugees_country_americas.png)
 
-If we take a closer look at Colombia, we can observe that there is a drastic increase in the number of refugees originating from that country from 2006 to 2007.
+If we take a closer look at Colombia, we can observe that there is a drastic increase in the number of refugees originating from that country from 2006 to 2007. The year 2006 was "a key moment of the Colombian internal conflict, when paramilitaries were demobilized. A number of these paramilitaries participated in judicial trials and confessed to the killing of 161,758 people6... Demobilized paramilitaries also confessed to massacres, threats of violence, targeted killings and forced displacement." (The Humanitarian Crisis in Colombia Caused by the Armed Conflict 2011).
 
 ![Image](https://github.com/aamitra/final_project/blob/main/refugees_colombia.png)
 
