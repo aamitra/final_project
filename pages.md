@@ -9,6 +9,7 @@ Our Github repository can be found [here](https://github.com/aamitra/final_proje
 
 The significacntly higher number of refugees coming from lower income countries can lead us to look further into the causes of displacement.
 
+
 ![Image](https://github.com/aamitra/final_project/blob/main/refugees_income.png)
 
 
