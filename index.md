@@ -12,29 +12,29 @@ Our Github repository can be found [here](https://github.com/aamitra/final_proje
 The significacntly higher number of refugees coming from lower income countries may inform research efforts that study the causes of displacement. In addition, this preliminary information can point to gaps in resources for countries going through humanitarian crises.
 
 
-![Image](https://github.com/aamitra/final_project/blob/main/refugees_income.png)
+![Figue 1](/refugees_income.png)
 
 
 Apart from analyzing quantitative data, it is important to integrate contextual and theoretical research into analyses. Somalia and Sudan are the leading countries in number of refugees between 1990 and 2020 in the Sub-Saharan region. These nations have suffered famine and political conflict, which may influence the number of refugees coming from these countries. Even though we cannot make causal statements about the influence of these factors, they can help us analyze our ML results within the context these events are ocurring.
 
-![Image](https://github.com/aamitra/final_project/blob/main/refugees_country_africa_2.png)
+![Figure 2](/refugees_country_africa_2.png)
 
 In the Americas, we can observe that Colombia has a significantly higher number of refugees reported in the same period (1990-2020). Colombia's recent history includes internal conflicts related to drug cartels, politics, and guerrillas. Again, we are not making causal inferences here about the relationship between these events and displacement of people, but considering the context in which these movements of people are happening can help us develop a more holistic model and analysis.
 
 
-![Image](https://github.com/aamitra/final_project/blob/main/refugees_country_americas.png)
+![Figure 3](/refugees_country_americas.png)
 
 If we take a closer look at Colombia, we can observe that there is a drastic increase in the number of refugees originating from that country from 2006 to 2007. The year 2006 was "a key moment of the Colombian internal conflict, when paramilitaries were demobilized. A number of these paramilitaries participated in judicial trials and confessed to the killing of 161,758 people6... Demobilized paramilitaries also confessed to massacres, threats of violence, targeted killings and forced displacement." (The Humanitarian Crisis in Colombia Caused by the Armed Conflict 2011).
 
-![Image](https://github.com/aamitra/final_project/blob/main/refugees_colombia.png)
+![Figure 4](/refugees_colombia.png)
 
 Visually, there are also higher concentrations of refugees as percent of the total population in Colombia and Somalia as comapred to other countries in Latin America and the Caribbean and Sub-Saharan Africa.
 
-![Image](https://github.com/aamitra/final_project/blob/main/map-refugees.png)
+![Figure 5](/map-refugees.png)
 
 Furthermore, the magnitude of displacement events defined as micro (< 1,000 refugees), small (1,000-10,000 refugees), medium (10,000-100,000 refugees), large (100,000-500,000 refugees), and full-scale (> 500,000 refugees) in countries of origin, can observed below. Machine Learning models could be used to predict where and what magnitude of humanitarian crises may happen, and allow communities to use this information to prepare.
 
-![Image)](https://github.com/aamitra/final_project/blob/main/map-disevent.png)
+![Figure 6](/map-disevent.png)
 
 ### Predicting Displacement By Volume and Category
 
@@ -46,6 +46,6 @@ Our dataset includes data from 70 countries in Sub-Saharan Africa and Latin Amer
 
 First, for our regression approach, we used K-nearest neighbors with hyperparameter tuning, random forest, and CART algorithms and specified root mean square error (RMSE) as our metric for comparison across models. We found that our random forest model has the strongest r-squared among the candidate models at 0.75 (compared to 0.36 for KNN and 0.45 for CART), indicating that it is quite good at capturing the variation in our data. Based on RMSE values (98,388 for KNN, 54,698 for random forest, and 87,406 for CART), we confirmed that our random forest model outperformed the alternative approaches. However, with an RMSE of 54,698 refugees, this model does not seem to perform very strongly. Within the context of the data, the mean value of refugees is 47,501, while the median value is only 911, which shows that a majority of displacement across country-years occurs on a relatively small scale. This suggests that our best model tends to overpredict the volume of displacement, which is further confirmed when we consider that our mean absolute error in evaluation was 16,893 refugees in comparison to our RMSE for the random forest model. This pattern is likely linked to the propensity of refugee data to be influenced by outliers and high leverage points during spikes of conflict or natural disaster in certain country-years. For instance, the largest observation in our data is Rwanda in 1994-1995, where the volume of refugees spiked to over 2 million during the Rwandan genocide, before subsiding immediately thereafter. It is likely that our best model would improve its performance if we excluded such outliers and high leverage cases. However, because such cases constitute the fundamental reality of how displacement occurs, such an approach may not make much sense in the context of our substantive question.   
 
-![Image](https://github.com/aamitra/final_project/blob/f58bd82170fe6b2015bc63ab90bdc7a1fddcff36/rmse.png)
+![Figure 7](/rmse.png)
 
 Second, for our classification approach, we continued to develop K-nearest neighbors with hyperparameter tuning, random forest with hyperparameter tuning, and CART algorithms and specified prediction accuracy as our criteria for analyzing the models in comparison. We found that our random forest model continued to have the strongest accuracy at 0.91 (compared to 0.84 for KNN and 0.75 for CART) in evaluation. While our best regression model is overpredicting specific volumes of displacement, this classification model appears to offer strong insights on the scale of displacement more broadly. Operational guidelines for refugee response are generally designed in this manner due to the rapidly evolving nature of particular displacement events, and such ML-based classification models may thus be a valuable addition to existing approaches for designing refugee response guidelines.    
