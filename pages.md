@@ -1,8 +1,9 @@
 ## Analyzing and Predicting Displacement in Sub-Saharan Africa and Latin America
 
-The number of forcibly displaced persons, including refugees, asylum-seekers, and internally-displaced persons,  stands at an all-time recorded high of 82.4 million (UNHCR, [2020](https://www.unhcr.org/60b638e37/unhcr-global-trends-2020)), with most refugees living in long-term displacement in the global south (UNHCR, 2019). In this project, we analyze the current displacement landscape in two of the world’s biggest refugee-generating and refugee-hosting regions—Sub-Saharan Africa and Latin America—using descriptive, geospatial, and predictive analysis. Our dataset includes data from 70 countries from 1990 to 2020 (n=1,909), with data sourced from UNHCR, the UCDP Battle Deaths Dataset, UCDP Deadly Electoral Conflict Database, Varieties of Democracy (V-Dem), the World Bank, and the International Disasters Database.
+The number of forcibly displaced persons, including refugees, asylum-seekers, and internally-displaced persons,  stands at an all-time recorded high of 82.4 million (UNHCR, [2020](https://www.unhcr.org/60b638e37/unhcr-global-trends-2020)), with most refugees living in long-term displacement in the global south (UNHCR, 2019). In this project, we analyze the current displacement landscape in two of the world’s biggest refugee-generating and refugee-hosting regions—Sub-Saharan Africa and Latin America—using descriptive, geospatial, and predictive analysis. Our dataset includes data from 70 countries from 1990 to 2020 (n=1,909), with refugee data sourced from UNHCR, conflict data from the UCDP Battle Deaths Dataset and UCDP Deadly Electoral Conflict Database, government index data from Varieties of Democracy (V-Dem), economic data from the World Bank, and natural event data from the International Disasters Database.
 
 Our Github repository can be found [here](https://github.com/aamitra/final_project.git). 
+
 
 ### Lower Income Countries Display Higher Number of Refugees
 
