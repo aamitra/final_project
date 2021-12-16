@@ -11,7 +11,7 @@ The significacntly higher number of refugees coming from lower income countries 
 ![Image](https://github.com/aamitra/final_project/blob/main/refugees_income.png)
 
 
-Somalia and Sudan are the leading countries in number of refugees between 1990 and 2020 in the Sub-Saharan region.
+Apart from analyzing quantitative data, it is important to integrate contextual and theoretical research into analyses. Somalia and Sudan are the leading countries in number of refugees between 1990 and 2020 in the Sub-Saharan region. These nations have suffered famine and political conflict, which may influence the number of refugees coming from these countries. Even though we cannot make causal statements about the influence of these factors, they can help us analyze our ML results within the context these events are ocurring.
 
 ![Image](https://github.com/aamitra/final_project/blob/main/refugees_country_africa_2.png)
 
