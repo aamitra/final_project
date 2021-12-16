@@ -18,6 +18,7 @@ Apart from analyzing quantitative data, it is important to integrate contextual 
 
 In the Americas, we can observe that Colombia has a significantly higher number of refugees reported in the same period (1990-2020). Colombia's recent history includes internal conflicts related to drug cartels, politics, and guerrillas. Again, we are not making causal inferences here about the relationship between these events and displacement of people, but considering the context in which these movements of people are happening can help us develop a more holistic model and analysis.
 
+
 ![Image](https://github.com/aamitra/final_project/blob/main/refugees_country_americas.png)
 
 If we take a closer look at Colombia, we can observe that there is a drastic increase in the number of refugees originating from that country from 2006 to 2007. The year 2006 was "a key moment of the Colombian internal conflict, when paramilitaries were demobilized. A number of these paramilitaries participated in judicial trials and confessed to the killing of 161,758 people6... Demobilized paramilitaries also confessed to massacres, threats of violence, targeted killings and forced displacement." (The Humanitarian Crisis in Colombia Caused by the Armed Conflict 2011).
