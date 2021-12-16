@@ -283,7 +283,7 @@ df <- na.omit(df)
 # removing variables mechanically oriented with refugees variable
 df_regression <- df %>% select(-refugeespc,-displacement_event)
 # create split object
-df_split <- initial_split(data = df, prop = 0.90)
+df_split <- initial_split(data = df_regression, prop = 0.90)
 
 # create training and testing data
 df_train <- training(x = df_split)
