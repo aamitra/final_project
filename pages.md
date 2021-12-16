@@ -38,17 +38,3 @@ First, for our regression approach, we used K-nearest neighbors with hyperparame
 ![Image](https://github.com/aamitra/final_project/blob/f58bd82170fe6b2015bc63ab90bdc7a1fddcff36/rmse.png)
 
 Second, for our classification approach, we continued to develop K-nearest neighbors with hyperparameter tuning, random forest with hyperparameter tuning, and CART algorithms and specified prediction accuracy as our criteria for analyzing the models in comparison. We found that our random forest model continued to have the strongest accuracy at 0.91 (compared to 0.84 for KNN and 0.75 for CART) in evaluation. While our best regression model is overpredicting specific volumes of displacement, this classification model appears to offer strong insights on the scale of displacement more broadly. Operational guidelines for refugee response are generally designed in this manner due to the rapidly evolving nature of particular displacement events, and such ML-based classification models may thus be a valuable addition to existing approaches for designing refugee response guidelines.    
-
-
-[Link](url) and ![Image](src)
-```
-
-For more details see [Basic writing and formatting syntax](https://docs.github.com/en/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/aamitra/final_project/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
